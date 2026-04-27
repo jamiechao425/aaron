@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多人帳目結算與分潤拆分系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto+Sans+TC', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .input-focus:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .modal-active {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20 text-left">
+
+    <!-- 頂部導覽列 -->
+    <nav class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-black tracking-widest flex items-center gap-2 text-white">
+                <span class="bg-indigo-600 p-1 rounded text-sm text-white">PRO</span>
+                結算分成管理系統
+            </h1>
+            <div class="text-xs text-slate-400 hidden sm:block text-right">算出月退 1 後，點擊清單設定分成與股東抽成</div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-4 space-y-6">
+        
+        <!-- 第一區：輸入區 -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-slate-500 text-xs font-bold mb-1 uppercase tracking-wider text-left">記錄日期</label>
+                    <input type="date" id="recordDate" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl input-focus transition-all">
+                </div>
+                <div>
+                    <label class="block text-slate-500 text-xs font-bold mb-1 uppercase tracking-wider text-left">遊戲帳號</label>
+                    <input type="text" id="gameAccount" placeholder="輸入帳號" autocomplete="off" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl input-focus transition-all text-sm font-bold">
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 玩家金額 -->
+                    <div>
+                        <label class="block text-slate-700 font-bold mb-1 flex items-center justify-between text-left">
+                            <span>玩家輸贏總額</span>
+                            <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black shadow-sm tracking-tight text-center">玩家輸錢填正數，贏錢填負值</span>
+                        </label>
+                        <input type="text" id="playerAmount" placeholder="0" autocomplete="off" inputmode="decimal"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl input-focus text-lg font-bold text-right"
+                            onfocus="unformatAndSelect(this)" onblur="formatInput(this)" oninput="updatePreview()">
+                    </div>
+                    <!-- 有效投注 -->
+                    <div>
+                        <label class="block text-slate-700 font-bold mb-1 text-left">有效投注金額</label>
+                        <input type="text" id="validBet" placeholder="0" autocomplete="off" inputmode="decimal"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl input-focus text-lg font-bold text-right text-slate-600"
+                            onfocus="unformatAndSelect(this)" onblur="formatInput(this)" oninput="updatePreview()">
+                    </div>
+                    <!-- 水錢趴數 -->
+                    <div>
+                        <label class="block text-indigo-600 font-black mb-1 flex justify-between text-left">
+                            <span>水錢趴數</span>
+                            <span id="ratePercent" class="text-xs text-indigo-500 font-bold">(= 0%)</span>
+                        </label>
+                        <input type="number" id="commissionRate" step="any" placeholder="1.15% 填 0.0115" autocomplete="off" inputmode="decimal"
+                            class="w-full px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl input-focus text-lg font-black text-indigo-700 text-right" 
+                            onfocus="this.select()" oninput="updatePreview()">
+                        <p class="text-[10px] text-indigo-400 mt-1 text-right font-medium">1% 填 0.01</p>
+                    </div>
+                </div>
+
+                <!-- 黑色預覽面板 -->
+                <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-2 text-[60px] font-black text-white/5 pointer-events-none uppercase tracking-tighter text-right">Summary</div>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 relative z-10 text-center">
+                        <div class="text-center">
+                            <div class="text-slate-400 text-[10px] mb-1 font-bold uppercase tracking-widest text-center">1. 水錢金額</div>
+                            <div id="previewCommission" class="text-xl font-bold text-yellow-400 font-mono">0</div>
+                        </div>
+                        <div class="text-center border-l border-slate-800 pl-4 lg:pl-0">
+                            <div class="text-slate-400 text-[10px] mb-1 font-bold uppercase tracking-widest text-center">2. 扣完水錢後</div>
+                            <div id="previewAfterCom" class="text-xl font-bold text-slate-300 font-mono">0</div>
+                        </div>
+                        <div class="text-center border-l border-slate-800 pl-4 lg:pl-0">
+                            <div class="text-slate-400 text-[10px] mb-1 font-bold uppercase tracking-widest text-blue-400 text-center">3. 月退 1 (x 0.9)</div>
+                            <div id="previewRefund1" class="text-xl font-bold text-blue-400 font-mono">0</div>
+                        </div>
+                        <div class="text-center border-l border-slate-800 pl-4 lg:pl-0">
+                            <div class="text-emerald-400 text-[10px] mb-1 font-bold uppercase tracking-widest text-emerald-400 text-center">預估結算 (100%)</div>
+                            <div id="previewFinal" class="text-3xl font-black text-emerald-400 font-mono tracking-tighter">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="addToLedger()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 text-lg text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+                    </svg>
+                    記錄此帳號並結算
+                </button>
+            </div>
+        </div>
+
+        <!-- 帳本列表 -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden text-left">
+            <div class="p-5 bg-slate-50 border-b border-slate-100 flex justify-between items-center text-left">
+                <h2 class="font-black text-slate-700 flex items-center gap-2 text-lg text-left">
+                    <span class="w-2 h-6 bg-indigo-600 rounded-full"></span>
+                    多人結算帳本 <span class="text-xs font-normal text-slate-400">(點擊帳號設定分成趴數與分潤)</span>
+                </h2>
+            </div>
+            
+            <div class="overflow-x-auto text-left">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] tracking-widest font-bold border-b border-slate-100 text-left">
+                        <tr>
+                            <th class="px-6 py-4 text-left">帳號 / 日期</th>
+                            <th class="px-4 py-4 text-right">原始輸贏</th>
+                            <th class="px-4 py-4 text-right text-slate-500">有效投注</th>
+                            <th class="px-4 py-4 text-right text-indigo-500 font-bold">水錢</th>
+                            <th class="px-4 py-4 text-right text-slate-500 font-bold">扣水後</th>
+                            <th class="px-4 py-4 text-right text-blue-600 font-bold font-mono">月退 1</th>
+                            <th class="px-4 py-4 text-right text-emerald-600 font-black">實拿金額</th>
+                            <th class="px-4 py-4 text-center text-slate-400">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerBody" class="divide-y divide-slate-50 text-left">
+                    </tbody>
+                </table>
+            </div>
+            <div id="noData" class="p-16 text-center text-slate-300 font-medium">目前尚無記錄</div>
+        </div>
+    </div>
+
+    <!-- 彈窗：設定分成與分潤 -->
+    <div id="splitModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 p-6 text-white flex justify-between items-center text-left">
+                <div>
+                    <h3 id="modalAccountTitle" class="text-xl font-black text-white">帳號名稱</h3>
+                    <p id="modalRefundSub" class="text-blue-300 text-xs font-bold mt-1 text-left">月退 1 總額: 0</p>
+                </div>
+                <button onclick="closeSplitModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto space-y-6 flex-grow text-left">
+                <!-- 代理分成比例設定 -->
+                <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-inner">
+                    <label class="block text-indigo-900 font-black text-sm mb-2 flex justify-between">
+                        <span>代理佔成比例 (直接打比例，例如 0.3)</span>
+                        <span id="modalStandDisplay" class="text-indigo-600 font-black">100%</span>
+                    </label>
+                    <div class="flex gap-4 items-center">
+                        <div class="flex-grow relative">
+                            <input type="number" id="modalStandRate" step="any" placeholder="100% 填 1" autocomplete="off" inputmode="decimal"
+                                class="w-full px-4 py-3 bg-white border border-indigo-200 rounded-xl input-focus text-lg font-black text-indigo-700" 
+                                onfocus="this.select()" oninput="updateSplitCalculations()">
+                            <span class="absolute right-3 top-3.5 text-[10px] text-indigo-300 font-bold uppercase font-black text-right">Rate</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[10px] text-indigo-400 font-bold uppercase font-black">代理佔成總金額</div>
+                            <div id="modalAgentTotal" class="text-xl font-black text-indigo-600 font-mono text-right">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center text-left">
+                        <span class="text-slate-800 font-bold text-left text-left">股東分潤分配 <span class="text-[10px] text-slate-400">(以月退 1 為基準)</span></span>
+                        <button onclick="addSplitRow()" class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-200">+ 新增股東</button>
+                    </div>
+                    <div id="splitRowsContainer" class="space-y-3 text-left"></div>
+                    <div id="splitSummary" class="mt-6 pt-6 border-t border-slate-100 space-y-3 text-left">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400 font-medium text-xs uppercase font-black">剩餘未分配比例 (月退 1)</span>
+                            <span id="remainingPercent" class="font-bold text-indigo-600 text-right">100%</span>
+                        </div>
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex justify-between items-center mt-4 text-left">
+                            <div class="text-xs font-black text-emerald-800 uppercase tracking-wider text-left">代理實拿金額 <br><span class="text-[10px] font-normal text-emerald-600 text-left">(佔成額扣除股東分潤後)</span></div>
+                            <div id="modalAgentOwn" class="text-2xl font-black text-emerald-700 font-mono text-right">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-slate-50 border-t border-slate-100 flex gap-3 text-left">
+                <button onclick="saveSplits()" class="flex-grow bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all text-white">儲存並回列表</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('recordDate').valueAsDate = new Date();
+        let ledgerData = [];
+        let currentSplitId = null;
+
+        /**
+         * 修正輸入疊加與格式化
+         */
+        function unformatAndSelect(el) {
+            el.value = el.value.replace(/,/g, '');
+            // 微小延遲確保在行動裝置也能成功全選，避免疊加
+            setTimeout(() => el.select(), 20);
+        }
+
+        function formatInput(el) {
+            let val = el.value.replace(/,/g, '');
+            if (val === "" || val === "-") return;
+            let num = parseFloat(val);
+            if (!isNaN(num)) el.value = num.toLocaleString('en-US');
+        }
+        
+        function getRawNumber(id) {
+            const val = document.getElementById(id).value.replace(/,/g, '');
+            return parseFloat(val) || 0;
+        }
+
+        // 精確運算與無條件捨去修正
+        function fixPrecision(num) { return Math.round(num * 1e12) / 1e12; }
+        
+        /**
+         * 採用 Math.trunc (無條件捨去小數)，解決負數時 floor 會多退一塊的問題
+         */
+        function safeTrunc(num) { 
+            // 加入 Epsilon 微量修正防止電腦浮點數 120000 變成 119999.999...
+            return Math.trunc(fixPrecision(num) + (num >= 0 ? 0.0000000001 : -0.0000000001)); 
+        }
+        
+        function formatDisplay(num) { return new Intl.NumberFormat('zh-TW').format(num); }
+
+        function calculateValues() {
+            const playerAmount = getRawNumber('playerAmount');
+            const validBet = getRawNumber('validBet');
+            const comRateInput = parseFloat(document.getElementById('commissionRate').value) || 0;
+            
+            document.getElementById('ratePercent').innerText = `(= ${fixPrecision(comRateInput * 100)}%)`;
+
+            const commission = safeTrunc(validBet * comRateInput);
+            const afterCommission = playerAmount - commission;
+            const monthlyRefund1 = safeTrunc(afterCommission * 0.9);
+
+            return { commission, afterCommission, monthlyRefund1, playerAmount, validBet, comRateInput };
+        }
+
+        function updatePreview() {
+            const v = calculateValues();
+            document.getElementById('previewCommission').innerText = formatDisplay(v.commission);
+            document.getElementById('previewAfterCom').innerText = formatDisplay(v.afterCommission);
+            document.getElementById('previewRefund1').innerText = formatDisplay(v.monthlyRefund1);
+            document.getElementById('previewFinal').innerText = formatDisplay(v.monthlyRefund1);
+        }
+
+        function addToLedger() {
+            const account = document.getElementById('gameAccount').value.trim();
+            if (!account) { 
+                // 為了避免 alert 這裡使用 console 或者不做動作，或者之後做個 UI 提示
+                return; 
+            }
+            const v = calculateValues();
+            const entry = { 
+                id: Date.now(), 
+                account, 
+                date: document.getElementById('recordDate').value, 
+                ...v, 
+                standRate: 1, 
+                agentTotal: v.monthlyRefund1, 
+                agentOwn: v.monthlyRefund1, 
+                splits: [] 
+            };
+            ledgerData.unshift(entry);
+            renderLedger();
+            document.getElementById('gameAccount').value = '';
+            document.getElementById('playerAmount').value = '';
+            document.getElementById('validBet').value = '';
+            updatePreview();
+        }
+
+        function renderLedger() {
+            const body = document.getElementById('ledgerBody');
+            const noData = document.getElementById('noData');
+            if (ledgerData.length === 0) { noData.classList.remove('hidden'); body.innerHTML = ''; return; }
+            noData.classList.add('hidden');
+            body.innerHTML = ledgerData.map(item => `
+                <tr class="hover:bg-indigo-50/50 transition-all cursor-pointer group text-left" onclick="openSplitModal(${item.id})">
+                    <td class="px-6 py-5">
+                        <div class="font-black text-slate-800 group-hover:text-indigo-600 transition-colors underline decoration-dotted underline-offset-4 text-left">${item.account}</div>
+                        <div class="text-[10px] text-slate-400 font-bold text-left">${item.date}</div>
+                    </td>
+                    <td class="px-4 py-5 text-right font-bold text-slate-400">${formatDisplay(item.playerAmount)}</td>
+                    <td class="px-4 py-5 text-right text-slate-400 font-medium">${formatDisplay(item.validBet)}</td>
+                    <td class="px-4 py-5 text-right text-indigo-600 font-bold font-mono text-right">${formatDisplay(item.commission)}</td>
+                    <td class="px-4 py-5 text-right text-slate-500 font-bold font-mono text-right">${formatDisplay(item.afterCommission)}</td>
+                    <td class="px-4 py-5 text-right text-blue-600 font-bold font-mono text-right">${formatDisplay(item.monthlyRefund1)}</td>
+                    <td class="px-4 py-4 text-right">
+                        <div class="text-emerald-700 font-black font-mono text-base underline decoration-2 decoration-emerald-100 underline-offset-4 text-right">${formatDisplay(item.agentOwn)}</div>
+                        <div class="text-[9px] text-emerald-400 font-bold text-right">分成: ${fixPrecision(item.standRate * 100)}%</div>
+                    </td>
+                    <td class="px-4 py-5 text-center" onclick="event.stopPropagation()">
+                        <button onclick="deleteEntry(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1-1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteEntry(id) { ledgerData = ledgerData.filter(i => i.id !== id); renderLedger(); }
+
+        function openSplitModal(id) {
+            currentSplitId = id;
+            const entry = ledgerData.find(i => i.id === id);
+            document.getElementById('modalAccountTitle').innerText = entry.account;
+            document.getElementById('modalRefundSub').innerText = `月退 1 總額: ${formatDisplay(entry.monthlyRefund1)}`;
+            document.getElementById('modalStandRate').value = entry.standRate;
+            const container = document.getElementById('splitRowsContainer');
+            container.innerHTML = '';
+            if (entry.splits && entry.splits.length > 0) entry.splits.forEach(s => addSplitRow(s.name, s.percent));
+            else addSplitRow();
+            document.getElementById('splitModal').classList.remove('hidden');
+            document.body.classList.add('modal-active');
+            updateSplitCalculations();
+        }
+
+        function closeSplitModal() { document.getElementById('splitModal').classList.add('hidden'); document.body.classList.remove('modal-active'); }
+
+        function addSplitRow(name = '', percent = '') {
+            const container = document.getElementById('splitRowsContainer');
+            const row = document.createElement('div');
+            row.className = "flex gap-2 items-center split-row group text-left";
+            row.innerHTML = `
+                <input type="text" placeholder="股東名稱" value="${name}" class="split-name flex-grow px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl input-focus text-sm font-bold text-left">
+                <div class="w-24 relative text-right text-right">
+                    <input type="number" step="any" placeholder="%" inputmode="decimal" onfocus="this.select()"
+                        class="split-percent w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl input-focus text-sm font-black text-right pr-6" 
+                        value="${percent}" oninput="updateSplitCalculations()">
+                    <span class="absolute right-2 top-3.5 text-[10px] text-slate-400 font-black">%</span>
+                </div>
+                <div class="w-32 text-right font-mono font-bold text-indigo-600 split-amount text-sm text-right">0</div>
+                <button onclick="this.parentElement.remove(); updateSplitCalculations();" class="text-slate-300 hover:text-red-400 p-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+
+        function updateSplitCalculations() {
+            const entry = ledgerData.find(i => i.id === currentSplitId);
+            const standRate = parseFloat(document.getElementById('modalStandRate').value) || 0;
+            const agentTotal = safeTrunc(entry.monthlyRefund1 * standRate);
+            
+            document.getElementById('modalStandDisplay').innerText = `${fixPrecision(standRate * 100)}%`;
+            document.getElementById('modalAgentTotal').innerText = formatDisplay(agentTotal);
+            
+            const rows = document.querySelectorAll('.split-row');
+            let totalSplitPercent = 0, totalPayoutToShareholders = 0;
+            
+            rows.forEach(row => {
+                const p = parseFloat(row.querySelector('.split-percent').value) || 0;
+                totalSplitPercent += p;
+                const amt = safeTrunc(entry.monthlyRefund1 * (p / 100));
+                totalPayoutToShareholders += amt;
+                row.querySelector('.split-amount').innerText = formatDisplay(amt);
+            });
+            
+            // 代理實拿 = 代理佔成總金額 - 股東分潤總和
+            const agentOwn = agentTotal - totalPayoutToShareholders;
+            
+            document.getElementById('remainingPercent').innerText = `${fixPrecision(100 - totalSplitPercent)}%`;
+            const label = document.getElementById('modalAgentOwn');
+            label.innerText = formatDisplay(agentOwn);
+            label.className = agentOwn < 0 ? "text-2xl font-black text-red-600 font-mono text-right" : "text-2xl font-black text-emerald-700 font-mono text-right";
+        }
+
+        function saveSplits() {
+            const entry = ledgerData.find(i => i.id === currentSplitId);
+            const standRate = parseFloat(document.getElementById('modalStandRate').value) || 0;
+            const agentTotal = safeTrunc(entry.monthlyRefund1 * standRate);
+            const rows = document.querySelectorAll('.split-row');
+            const splits = [];
+            let totalPayout = 0;
+            
+            rows.forEach(row => {
+                const name = row.querySelector('.split-name').value.trim();
+                const p = parseFloat(row.querySelector('.split-percent').value) || 0;
+                if (name || p > 0) {
+                    const amt = safeTrunc(entry.monthlyRefund1 * (p / 100));
+                    splits.push({ name, percent: p, amount: amt });
+                    totalPayout += amt;
+                }
+            });
+            
+            entry.standRate = standRate;
+            entry.agentTotal = agentTotal;
+            entry.agentOwn = agentTotal - totalPayout;
+            entry.splits = splits;
+            
+            renderLedger();
+            closeSplitModal();
+        }
+
+        updatePreview();
+    </script>
+</body>
+</html>
