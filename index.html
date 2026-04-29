@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AARON 結算分成管理系統 (本機保存版)</title>
+    <title>AARON 結算分成管理系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
@@ -13,41 +13,41 @@
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
         }
+        /* 優化手機點擊與輸入 */
         .input-focus:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .modal-active { overflow: hidden; }
         
-        /* 狀態提示動畫 */
-        #saveStatus {
-            transition: opacity 0.3s ease;
-        }
+        /* 儲存提示 */
+        #saveStatus { transition: opacity 0.3s ease; }
     </style>
 </head>
 <body class="min-h-screen pb-20">
 
-    <!-- 本機儲存狀態 -->
+    <!-- 保存狀態 -->
     <div id="saveStatus" class="fixed top-2 right-2 z-[60] px-2 py-1 rounded text-[9px] font-black uppercase bg-indigo-100 text-indigo-600 opacity-0 pointer-events-none">
-        Saved Local
+        Saved Locally
     </div>
 
+    <!-- 頂部導覽列 -->
     <nav class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <div class="max-w-7xl mx-auto flex justify-between items-center text-left">
             <h1 class="text-lg font-black tracking-tighter flex items-center gap-2">
                 <span class="bg-indigo-600 px-1.5 py-0.5 rounded text-xs">AARON</span>
-                <span class="text-sm">結算分成管理 (Local)</span>
+                <span class="text-sm">結算分成管理</span>
             </h1>
             <div class="flex items-center gap-2">
-                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span class="text-[10px] text-slate-400 font-bold uppercase">Ready</span>
+                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Offline Ready</span>
             </div>
         </div>
     </nav>
 
     <div class="max-w-7xl mx-auto p-3 space-y-4">
         
-        <!-- 第一區：輸入區 -->
+        <!-- 輸入區 -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-            <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                 <div>
                     <label class="block text-slate-400 text-[9px] font-bold mb-1 uppercase">日期</label>
                     <input type="date" id="recordDate" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl input-focus text-sm">
@@ -58,7 +58,7 @@
                 </div>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-4 text-left">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="text-xs font-bold text-slate-600 mb-1 block">玩家輸贏總額</label>
@@ -84,7 +84,7 @@
                 </div>
 
                 <!-- 黑色預覽面板 -->
-                <div class="bg-slate-900 rounded-2xl p-4 text-white shadow-lg">
+                <div class="bg-slate-900 rounded-2xl p-4 text-white shadow-lg text-left">
                     <div class="grid grid-cols-3 gap-1 text-center">
                         <div>
                             <div class="text-slate-500 text-[8px] font-bold uppercase mb-1">1. 水錢</div>
@@ -108,20 +108,20 @@
         </div>
 
         <!-- 帳本列表 -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden text-left">
             <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                 <h2 class="font-black text-slate-700 text-sm flex items-center gap-2">
                     <span class="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
                     多人結算帳本
                 </h2>
-                <div id="recordCount" class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">0 RECORDS</div>
+                <div id="recordCount" class="text-[9px] font-black text-slate-400 uppercase tracking-widest">0 Records</div>
             </div>
             
             <div class="overflow-x-auto">
                 <table class="w-full text-xs">
                     <thead class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
                         <tr>
-                            <th class="p-3 text-left">帳號/日期</th>
+                            <th class="p-3 text-left">帳號 / 日期</th>
                             <th class="p-3 text-right">水錢</th>
                             <th class="p-3 text-right">月退 1</th>
                             <th class="p-3 text-center">刪除</th>
@@ -136,18 +136,18 @@
         </div>
     </div>
 
-    <!-- 拆分彈窗 -->
+    <!-- 彈窗：詳細拆分 -->
     <div id="splitModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-3">
         <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="bg-slate-900 p-5 text-white flex justify-between items-center">
+            <div class="bg-slate-900 p-5 text-white flex justify-between items-center text-left">
                 <div>
                     <h3 id="modalAccountTitle" class="text-base font-black">帳號名稱</h3>
-                    <p id="modalRefundSub" class="text-blue-300 text-[10px] font-bold">月退 1: 0</p>
+                    <p id="modalRefundSub" class="text-blue-300 text-[10px] font-bold">月退 1 總額: 0</p>
                 </div>
                 <button onclick="closeSplitModal()" class="text-slate-500 hover:text-white p-2 text-xl">✕</button>
             </div>
             
-            <div class="p-4 overflow-y-auto space-y-5 flex-grow">
+            <div class="p-4 overflow-y-auto space-y-5 flex-grow text-left">
                 <!-- 佔成比例 -->
                 <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
                     <div class="flex justify-between items-end mb-2">
@@ -178,8 +178,8 @@
                             <span id="remainingPercent">100%</span>
                         </div>
                         <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center">
-                            <div class="text-[10px] font-black text-emerald-800 uppercase">代理實拿 <br><span class="font-normal text-[8px] text-emerald-600">扣除分潤後</span></div>
-                            <div id="modalAgentOwn" class="text-xl font-black text-emerald-700 font-mono">0</div>
+                            <div class="text-[10px] font-black text-emerald-800 uppercase">代理實拿 <br><span class="font-normal text-[8px] text-emerald-600 text-left">扣除分潤後</span></div>
+                            <div id="modalAgentOwn" class="text-xl font-black text-emerald-700 font-mono text-right">0</div>
                         </div>
                     </div>
                 </div>
@@ -191,7 +191,7 @@
         </div>
     </div>
 
-    <!-- 刪除確認彈窗 -->
+    <!-- 刪除確認 -->
     <div id="deleteConfirmModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] hidden flex items-center justify-center p-6 text-center">
         <div class="bg-white w-full max-w-xs rounded-3xl shadow-2xl p-6">
             <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -200,7 +200,7 @@
                 </svg>
             </div>
             <h3 class="text-lg font-black text-slate-800 mb-2">確定要刪除？</h3>
-            <p class="text-xs text-slate-500 mb-6 font-medium">資料刪除後將無法恢復。</p>
+            <p class="text-xs text-slate-500 mb-6 font-medium">此動作無法復原。</p>
             <div class="flex gap-2">
                 <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs">取消</button>
                 <button id="confirmDeleteAction" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs active:bg-red-800">確認刪除</button>
@@ -209,26 +209,26 @@
     </div>
 
     <script>
-        // 本機儲存鍵值
-        const STORAGE_KEY = 'aaron_ledger_v2';
+        // 本機儲存標籤
+        const STORAGE_KEY = 'aaron_ledger_v3_local';
         
         let ledgerData = [];
         let currentSplitId = null;
         let pendingDeleteId = null;
 
-        // 計算工具
+        // 計算引擎
         const fix = (n) => Math.round(n * 1e10) / 1e10;
         const trunc = (n) => Math.trunc(fix(n) + (n >= 0 ? 1e-9 : -1e-9));
         const fmt = (n) => new Intl.NumberFormat('zh-TW').format(n);
 
-        // 初始化
+        // --- 初始化 ---
         window.onload = () => {
             document.getElementById('recordDate').valueAsDate = new Date();
             loadFromStorage();
             updatePreview();
         };
 
-        // --- 儲存邏輯 ---
+        // --- 儲存核心 ---
         function saveToStorage() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(ledgerData));
             showSaveHint();
@@ -237,11 +237,7 @@
         function loadFromStorage() {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
-                try {
-                    ledgerData = JSON.parse(saved);
-                } catch(e) {
-                    ledgerData = [];
-                }
+                try { ledgerData = JSON.parse(saved); } catch(e) { ledgerData = []; }
             }
             renderLedger();
         }
@@ -249,10 +245,10 @@
         function showSaveHint() {
             const hint = document.getElementById('saveStatus');
             hint.style.opacity = '1';
-            setTimeout(() => hint.style.opacity = '0', 1000);
+            setTimeout(() => hint.style.opacity = '0', 800);
         }
 
-        // --- UI 事件 ---
+        // --- UI 操作 ---
         function unformatAndSelect(el) {
             el.value = el.value.replace(/,/g, '');
             setTimeout(() => el.select(), 50);
@@ -269,10 +265,8 @@
             const PA = parseFloat(document.getElementById('playerAmount').value.replace(/,/g, '')) || 0;
             const VB = parseFloat(document.getElementById('validBet').value.replace(/,/g, '')) || 0;
             const rate = parseFloat(document.getElementById('commissionRate').value) || 0;
-            
             const rateHint = document.getElementById('ratePercent');
             if (rateHint) rateHint.innerText = `(= ${fix(rate * 100)}%)`;
-            
             const comm = trunc(VB * rate);
             const after = PA - comm;
             const ref1 = trunc(after * 0.9);
@@ -290,25 +284,11 @@
             const accEl = document.getElementById('gameAccount');
             const acc = accEl.value.trim();
             if (!acc) return;
-
             const v = calculateValues();
-            const id = Date.now().toString();
-            const entry = { 
-                id, 
-                account: acc, 
-                date: document.getElementById('recordDate').value, 
-                ...v, 
-                standRate: 1, 
-                agentTotal: v.ref1, 
-                agentOwn: v.ref1, 
-                splits: [] 
-            };
-            
+            const entry = { id: Date.now().toString(), account: acc, date: document.getElementById('recordDate').value, ...v, standRate: 1, agentTotal: v.ref1, agentOwn: v.ref1, splits: [] };
             ledgerData.unshift(entry);
             saveToStorage();
             renderLedger();
-            
-            // 重置
             accEl.value = '';
             document.getElementById('playerAmount').value = '';
             document.getElementById('validBet').value = '';
@@ -319,62 +299,47 @@
             const body = document.getElementById('ledgerBody');
             const noData = document.getElementById('noData');
             document.getElementById('recordCount').innerText = `${ledgerData.length} RECORDS`;
-
-            if (ledgerData.length === 0) {
-                noData.classList.remove('hidden');
-                body.innerHTML = '';
-                return;
-            }
+            if (ledgerData.length === 0) { noData.classList.remove('hidden'); body.innerHTML = ''; return; }
             noData.classList.add('hidden');
-
             body.innerHTML = ledgerData.map(item => `
                 <tr class="active:bg-slate-100 transition-colors" onclick="openSplitModal('${item.id}')">
                     <td class="p-3 text-left">
                         <div class="font-black text-slate-800 text-xs tracking-tighter">${item.account}</div>
-                        <div class="text-[8px] text-slate-400 font-black">${item.date}</div>
+                        <div class="text-[8px] text-slate-400 font-bold">${item.date}</div>
                     </td>
                     <td class="p-3 text-right">
                         <div class="font-bold text-indigo-600 font-mono text-[10px]">${fmt(item.comm)}</div>
-                        <div class="text-[7px] text-slate-300 font-bold uppercase">Comm</div>
+                        <div class="text-[7px] text-slate-300 font-bold uppercase">Water</div>
                     </td>
                     <td class="p-3 text-right">
                         <div class="font-black text-blue-600 font-mono text-sm tracking-tighter">${fmt(item.ref1)}</div>
                         <div class="text-[7px] text-blue-300 font-bold uppercase text-right">Refund 1</div>
                     </td>
                     <td class="p-3 text-center" onclick="event.stopPropagation()">
-                        <button onclick="requestDelete('${item.id}')" class="text-slate-300 p-2 active:text-red-500">✕</button>
+                        <button onclick="requestDelete('${item.id}')" class="text-slate-200 p-2 active:text-red-500 text-lg">✕</button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        // --- 彈窗拆分邏輯 ---
+        // --- 拆分與手動填寫金額邏輯 ---
         function openSplitModal(id) {
             currentSplitId = id;
             const entry = ledgerData.find(i => i.id === id);
             if (!entry) return;
-            
             document.getElementById('modalAccountTitle').innerText = entry.account;
             document.getElementById('modalRefundSub').innerText = `月退 1 總額: ${fmt(entry.ref1)}`;
             document.getElementById('modalStandRate').value = entry.standRate;
-            
             const container = document.getElementById('splitRowsContainer');
             container.innerHTML = '';
-            if (entry.splits && entry.splits.length > 0) {
-                entry.splits.forEach(s => addSplitRow(s.name, s.percent, s.amount));
-            } else {
-                addSplitRow();
-            }
-            
+            if (entry.splits && entry.splits.length > 0) entry.splits.forEach(s => addSplitRow(s.name, s.percent, s.amount));
+            else addSplitRow();
             document.getElementById('splitModal').classList.remove('hidden');
             document.body.classList.add('modal-active');
             updateSplitCalculations();
         }
 
-        function closeSplitModal() {
-            document.getElementById('splitModal').classList.add('hidden');
-            document.body.classList.remove('modal-active');
-        }
+        function closeSplitModal() { document.getElementById('splitModal').classList.add('hidden'); document.body.classList.remove('modal-active'); }
 
         function addSplitRow(name = '', percent = '', amount = '') {
             const container = document.getElementById('splitRowsContainer');
@@ -399,9 +364,7 @@
         function syncFromAmount(el) {
             const entry = ledgerData.find(i => i.id === currentSplitId);
             const amt = parseFloat(el.value.replace(/,/g, '')) || 0;
-            if (entry.ref1 !== 0) {
-                el.closest('.split-row').querySelector('.split-percent').value = fix((amt / entry.ref1) * 100);
-            }
+            if (entry.ref1 !== 0) el.closest('.split-row').querySelector('.split-percent').value = fix((amt / entry.ref1) * 100);
             updateSplitCalculations();
         }
 
@@ -409,73 +372,40 @@
             const entry = ledgerData.find(i => i.id === currentSplitId);
             const sr = parseFloat(document.getElementById('modalStandRate').value) || 0;
             const totalAgent = trunc(entry.ref1 * sr);
-            
             document.getElementById('modalStandDisplay').innerText = `${fix(sr * 100)}%`;
             document.getElementById('modalAgentTotal').innerText = fmt(totalAgent);
-            
             let ta = 0, tp = 0;
             document.querySelectorAll('.split-row').forEach(row => {
                 tp += parseFloat(row.querySelector('.split-percent').value) || 0;
                 ta += parseFloat(row.querySelector('.split-amount-input').value.replace(/,/g, '')) || 0;
             });
-            
             document.getElementById('remainingPercent').innerText = `${fix(100 - tp)}%`;
             const own = totalAgent - ta;
             const ownEl = document.getElementById('modalAgentOwn');
             ownEl.innerText = fmt(own);
-            ownEl.className = own < 0 ? "text-xl font-black text-red-600 font-mono" : "text-xl font-black text-emerald-700 font-mono";
+            ownEl.className = own < 0 ? "text-xl font-black text-red-600 font-mono text-right" : "text-xl font-black text-emerald-700 font-mono text-right";
         }
 
         function saveSplits() {
             const index = ledgerData.findIndex(i => i.id === currentSplitId);
             const entry = ledgerData[index];
             const sr = parseFloat(document.getElementById('modalStandRate').value) || 0;
-            
-            const splits = [];
-            let ta = 0;
+            const splits = []; let ta = 0;
             document.querySelectorAll('.split-row').forEach(row => {
                 const n = row.querySelector('.split-name').value.trim();
                 const p = parseFloat(row.querySelector('.split-percent').value) || 0;
                 const a = parseFloat(row.querySelector('.split-amount-input').value.replace(/,/g, '')) || 0;
-                if (n || p > 0 || a !== 0) {
-                    splits.push({ name: n, percent: p, amount: a });
-                    ta += a;
-                }
+                if (n || p > 0 || a !== 0) { splits.push({ name: n, percent: p, amount: a }); ta += a; }
             });
-            
-            ledgerData[index] = { 
-                ...entry, 
-                standRate: sr, 
-                agentTotal: trunc(entry.ref1 * sr), 
-                agentOwn: trunc(entry.ref1 * sr) - ta, 
-                splits 
-            };
-            
+            ledgerData[index] = { ...entry, standRate: sr, agentTotal: trunc(entry.ref1 * sr), agentOwn: trunc(entry.ref1 * sr) - ta, splits };
             saveToStorage();
             closeSplitModal();
         }
 
-        // --- 刪除功能 ---
-        function requestDelete(id) {
-            pendingDeleteId = id;
-            document.getElementById('deleteConfirmModal').classList.remove('hidden');
-            document.body.classList.add('modal-active');
-        }
-
-        function closeDeleteModal() {
-            document.getElementById('deleteConfirmModal').classList.add('hidden');
-            document.body.classList.remove('modal-active');
-            pendingDeleteId = null;
-        }
-
-        document.getElementById('confirmDeleteAction').onclick = () => {
-            if (pendingDeleteId) {
-                ledgerData = ledgerData.filter(i => i.id !== pendingDeleteId);
-                saveToStorage();
-                renderLedger();
-                closeDeleteModal();
-            }
-        };
+        // --- 刪除確認 ---
+        function requestDelete(id) { pendingDeleteId = id; document.getElementById('deleteConfirmModal').classList.remove('hidden'); document.body.classList.add('modal-active'); }
+        function closeDeleteModal() { document.getElementById('deleteConfirmModal').classList.add('hidden'); document.body.classList.remove('modal-active'); pendingDeleteId = null; }
+        document.getElementById('confirmDeleteAction').onclick = () => { if (pendingDeleteId) { ledgerData = ledgerData.filter(i => i.id !== pendingDeleteId); saveToStorage(); renderLedger(); closeDeleteModal(); } };
 
     </script>
 </body>
