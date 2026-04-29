@@ -11,29 +11,33 @@
             font-family: 'Noto+Sans+TC', sans-serif;
             background-color: #f8fafc;
             -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
         .input-focus:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .modal-active { overflow: hidden; }
+        
+        /* 極速載入動畫 */
         .loading-overlay {
             position: fixed; inset: 0; background: #ffffff;
             display: flex; align-items: center; justify-content: center;
-            z-index: 9999; transition: opacity 0.2s ease;
+            z-index: 9999; transition: opacity 0.3s ease;
         }
-        .sync-active { animation: pulse 1s infinite; color: #10b981; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .loading-hide { opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body class="min-h-screen pb-20">
 
-    <div id="syncStatus" class="fixed top-2 right-2 z-[60] px-2 py-1 rounded text-[9px] font-black uppercase bg-slate-200 text-slate-500 pointer-events-none">
-        Offline
+    <!-- 雲端狀態 -->
+    <div id="syncStatus" class="fixed top-2 right-2 z-[60] px-2 py-1 rounded text-[9px] font-black uppercase bg-slate-200 text-slate-500 transition-all opacity-0">
+        Synced
     </div>
 
+    <!-- 啟動遮罩 (5秒後會強制消失防止卡死) -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="text-center">
             <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p class="text-indigo-600 font-bold text-xs tracking-tighter">系統加速啟動中...</p>
+            <p class="text-indigo-600 font-black text-xs tracking-tighter">AARON SYSTEM 快啟中...</p>
         </div>
     </div>
 
@@ -41,22 +45,23 @@
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <h1 class="text-lg font-black tracking-tighter flex items-center gap-2">
                 <span class="bg-indigo-600 px-1.5 py-0.5 rounded text-xs">AARON</span>
-                <span class="hidden sm:inline">結算分成管理系統</span>
+                <span class="text-sm">結算分成管理</span>
             </h1>
-            <span id="connIndicator" class="text-[10px] text-slate-500 font-bold">連線檢查中...</span>
+            <span id="connIndicator" class="text-[10px] text-slate-500 font-bold">連線中...</span>
         </div>
     </nav>
 
     <div class="max-w-7xl mx-auto p-3 space-y-4">
         
+        <!-- 輸入區 -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <div>
-                    <label class="block text-slate-400 text-[10px] font-bold mb-1 uppercase">日期</label>
+                    <label class="block text-slate-400 text-[9px] font-bold mb-1 uppercase">日期</label>
                     <input type="date" id="recordDate" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl input-focus text-sm">
                 </div>
                 <div>
-                    <label class="block text-slate-400 text-[10px] font-bold mb-1 uppercase">遊戲帳號</label>
+                    <label class="block text-slate-400 text-[9px] font-bold mb-1 uppercase">遊戲帳號</label>
                     <input type="text" id="gameAccount" placeholder="帳號" autocomplete="off" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl input-focus text-sm font-bold">
                 </div>
             </div>
@@ -86,56 +91,52 @@
                     </div>
                 </div>
 
+                <!-- 黑色預覽面板 -->
                 <div class="bg-slate-900 rounded-2xl p-4 text-white shadow-lg">
-                    <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="grid grid-cols-3 gap-1 text-center">
                         <div>
-                            <div class="text-slate-500 text-[9px] font-bold uppercase mb-1">1. 水錢</div>
-                            <div id="previewCommission" class="text-sm font-bold text-yellow-400 font-mono">0</div>
+                            <div class="text-slate-500 text-[8px] font-bold uppercase mb-1">1. 水錢</div>
+                            <div id="previewCommission" class="text-xs font-bold text-yellow-400 font-mono">0</div>
                         </div>
-                        <div class="border-x border-slate-800">
-                            <div class="text-slate-500 text-[9px] font-bold uppercase mb-1">2. 扣水後</div>
-                            <div id="previewAfterCom" class="text-sm font-bold text-slate-300 font-mono">0</div>
+                        <div class="border-x border-slate-800 px-1">
+                            <div class="text-slate-500 text-[8px] font-bold uppercase mb-1">2. 扣水後</div>
+                            <div id="previewAfterCom" class="text-xs font-bold text-slate-300 font-mono">0</div>
                         </div>
                         <div>
-                            <div class="text-blue-400 text-[9px] font-bold uppercase mb-1">3. 月退 1</div>
-                            <div id="previewRefund1" class="text-lg font-black text-blue-400 font-mono tracking-tighter">0</div>
+                            <div class="text-blue-400 text-[8px] font-bold uppercase mb-1">3. 月退 1</div>
+                            <div id="previewRefund1" class="text-base font-black text-blue-400 font-mono">0</div>
                         </div>
                     </div>
                 </div>
 
-                <button onclick="addToLedger()" id="addBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl shadow-md transition-all active:scale-[0.97] flex items-center justify-center gap-2">
-                    記錄此帳號
+                <button onclick="addToLedger()" id="addBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-md transition-all active:scale-[0.97] flex items-center justify-center gap-2">
+                    記錄並同步
                 </button>
             </div>
         </div>
 
+        <!-- 列表 -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50/50">
-                <h2 class="font-black text-slate-700 text-sm flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
-                    多人結算帳本
-                </h2>
-            </div>
-            
             <div class="overflow-x-auto">
                 <table class="w-full text-xs">
                     <thead class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
                         <tr>
-                            <th class="p-3 text-left">帳號</th>
-                            <th class="p-3 text-right">輸贏 / 投注</th>
+                            <th class="p-3 text-left">帳號/日期</th>
                             <th class="p-3 text-right">水錢</th>
                             <th class="p-3 text-right">月退 1</th>
                             <th class="p-3 text-center">刪除</th>
                         </tr>
                     </thead>
-                    <tbody id="ledgerBody" class="divide-y divide-slate-50">
-                    </tbody>
+                    <tbody id="ledgerBody" class="divide-y divide-slate-50"></tbody>
                 </table>
             </div>
-            <div id="noData" class="p-10 text-center text-slate-300 text-xs font-medium tracking-widest uppercase">Initializing...</div>
+            <div id="noData" class="p-10 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                連線中...
+            </div>
         </div>
     </div>
 
+    <!-- 拆分彈窗 -->
     <div id="splitModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-3">
         <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="bg-slate-900 p-5 text-white flex justify-between items-center">
@@ -143,21 +144,19 @@
                     <h3 id="modalAccountTitle" class="text-base font-black">帳號名稱</h3>
                     <p id="modalRefundSub" class="text-blue-300 text-[10px] font-bold">月退 1: 0</p>
                 </div>
-                <button onclick="closeSplitModal()" class="text-slate-500 hover:text-white transition-colors p-2">✕</button>
+                <button onclick="closeSplitModal()" class="text-slate-500 hover:text-white p-2">✕</button>
             </div>
             
             <div class="p-4 overflow-y-auto space-y-5 flex-grow">
                 <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
                     <div class="flex justify-between items-end mb-2">
-                        <span class="text-xs font-black text-indigo-900 uppercase">代理佔成比例</span>
+                        <span class="text-xs font-black text-indigo-900 uppercase text-left">代理佔成比例</span>
                         <span id="modalStandDisplay" class="text-xs font-black text-indigo-600">100%</span>
                     </div>
                     <div class="flex gap-3 items-center">
-                        <div class="flex-grow">
-                            <input type="number" id="modalStandRate" step="any" inputmode="decimal"
-                                class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl input-focus font-black text-indigo-700" 
-                                onfocus="this.select()" oninput="updateSplitCalculations()">
-                        </div>
+                        <input type="number" id="modalStandRate" step="any" inputmode="decimal"
+                            class="flex-grow px-3 py-2 bg-white border border-indigo-200 rounded-xl input-focus font-black text-indigo-700" 
+                            onfocus="this.select()" oninput="updateSplitCalculations()">
                         <div class="text-right">
                             <div class="text-[8px] text-indigo-400 font-bold uppercase">佔成總額</div>
                             <div id="modalAgentTotal" class="text-sm font-black text-indigo-600 font-mono">0</div>
@@ -167,18 +166,14 @@
 
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
-                        <span class="text-xs font-black text-slate-700">股東分潤明細</span>
-                        <button onclick="addSplitRow()" class="text-[10px] bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-black">+ 新增股東</button>
+                        <span class="text-xs font-black text-slate-700">股東分潤</span>
+                        <button onclick="addSplitRow()" class="text-[10px] bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-black">+ 新增</button>
                     </div>
                     <div id="splitRowsContainer" class="space-y-2"></div>
                     
                     <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                        <div class="flex justify-between text-[10px] font-bold text-slate-400">
-                            <span>剩餘分配比例</span>
-                            <span id="remainingPercent">100%</span>
-                        </div>
                         <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center">
-                            <div class="text-[10px] font-black text-emerald-800">代理實拿 <br><span class="font-normal text-[8px] text-emerald-600">已扣除分潤</span></div>
+                            <div class="text-[10px] font-black text-emerald-800">代理實拿 <br><span class="font-normal text-[8px] text-emerald-600">扣除分潤後</span></div>
                             <div id="modalAgentOwn" class="text-xl font-black text-emerald-700 font-mono">0</div>
                         </div>
                     </div>
@@ -186,15 +181,16 @@
             </div>
 
             <div class="p-4 bg-slate-50 border-t border-slate-100">
-                <button onclick="saveSplits()" id="saveBtn" class="w-full bg-slate-900 text-white font-black py-3.5 rounded-xl text-sm">儲存設定</button>
+                <button onclick="saveSplits()" id="saveBtn" class="w-full bg-slate-900 text-white font-black py-4 rounded-xl text-sm">儲存設定</button>
             </div>
         </div>
     </div>
 
-    <div id="deleteConfirmModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] hidden flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-xs rounded-3xl shadow-2xl p-6 text-center">
+    <!-- 刪除確認 -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] hidden flex items-center justify-center p-6 text-center">
+        <div class="bg-white w-full max-w-xs rounded-3xl shadow-2xl p-6">
             <h3 class="text-lg font-black text-slate-800 mb-2">確定刪除？</h3>
-            <p class="text-xs text-slate-500 mb-6">此動作將永久移除雲端紀錄。</p>
+            <p class="text-xs text-slate-500 mb-6">此動作將永久移除紀錄。</p>
             <div class="flex gap-2">
                 <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs">取消</button>
                 <button id="confirmDeleteAction" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs">確認</button>
@@ -205,24 +201,28 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Config
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'aaron-v2-optimized';
 
-        // 離線快取 (解決手機等很久的問題)
-        try { enableIndexedDbPersistence(db); } catch(err) { console.warn("Persistence failed"); }
-
         let ledgerData = [];
         let currentSplitId = null;
         let pendingDeleteId = null;
+        let isFirstLoad = true;
 
-        // 全域函數掛載 (加速調用)
-        window.unformatAndSelect = (el) => { el.value = el.value.replace(/,/g, ''); setTimeout(() => el.select(), 10); };
+        // --- 強制加速邏輯 ---
+        const hideLoader = () => {
+            const loader = document.getElementById('loadingOverlay');
+            if (loader) loader.classList.add('loading-hide');
+        };
+        setTimeout(hideLoader, 5000); // 5秒超時強制關閉載入畫面
+
+        // 全域函數
+        window.unformatAndSelect = (el) => { el.value = el.value.replace(/,/g, ''); setTimeout(() => el.select(), 50); };
         window.formatInput = (el) => {
             let val = el.value.replace(/,/g, '');
             if (val === "" || val === "-") return;
@@ -230,44 +230,46 @@
             if (!isNaN(num)) el.value = num.toLocaleString('en-US');
         };
 
-        // --- 初始化 ---
         const init = async () => {
             document.getElementById('recordDate').valueAsDate = new Date();
             
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch(e) { console.error("Auth err", e); hideLoader(); }
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'ledger');
+                    // 監聽雲端資料
                     onSnapshot(colRef, (snapshot) => {
                         ledgerData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
                         renderLedger();
-                        document.getElementById('loadingOverlay').classList.add('opacity-0');
-                        setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 200);
+                        if (isFirstLoad) { hideLoader(); isFirstLoad = false; }
                         updateStatus("Synced");
+                    }, (err) => { 
+                        console.error("Snapshot err", err); 
+                        hideLoader(); 
+                        document.getElementById('noData').innerText = "連線失敗，請重整";
                     });
-                    document.getElementById('connIndicator').innerText = "雲端連線中";
+                    document.getElementById('connIndicator').innerText = "雲端同步中";
                     document.getElementById('connIndicator').className = "text-[10px] text-emerald-500 font-bold";
                 }
             });
         };
 
-        // --- 核心計算 (Trunc 版本) ---
+        // 計算工具
         const fix = (n) => Math.round(n * 1e10) / 1e10;
         const trunc = (n) => Math.trunc(fix(n) + (n >= 0 ? 1e-9 : -1e-9));
         const fmt = (n) => new Intl.NumberFormat('zh-TW').format(n);
 
         window.calculateValues = () => {
-            const rawPA = document.getElementById('playerAmount').value.replace(/,/g, '');
-            const rawVB = document.getElementById('validBet').value.replace(/,/g, '');
-            const PA = parseFloat(rawPA) || 0;
-            const VB = parseFloat(rawVB) || 0;
+            const PA = parseFloat(document.getElementById('playerAmount').value.replace(/,/g, '')) || 0;
+            const VB = parseFloat(document.getElementById('validBet').value.replace(/,/g, '')) || 0;
             const rate = parseFloat(document.getElementById('commissionRate').value) || 0;
-            
             document.getElementById('ratePercent').innerText = `(= ${fix(rate * 100)}%)`;
             const comm = trunc(VB * rate);
             const after = PA - comm;
@@ -284,48 +286,39 @@
 
         window.addToLedger = async () => {
             const acc = document.getElementById('gameAccount').value.trim();
-            if (!acc) return;
-            const addBtn = document.getElementById('addBtn');
-            addBtn.innerText = "儲存中...";
-            addBtn.disabled = true;
+            if (!acc || !auth.currentUser) return;
+            const btn = document.getElementById('addBtn');
+            btn.disabled = true; btn.innerText = "...";
 
             const v = calculateValues();
             const id = Date.now().toString();
             const entry = { id, account: acc, date: document.getElementById('recordDate').value, ...v, standRate: 1, agentTotal: v.ref1, agentOwn: v.ref1, splits: [] };
             
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ledger', id), entry);
-            
-            document.getElementById('gameAccount').value = '';
-            document.getElementById('playerAmount').value = '';
-            document.getElementById('validBet').value = '';
-            addBtn.innerText = "記錄此帳號";
-            addBtn.disabled = false;
-            updatePreview();
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ledger', id), entry);
+                document.getElementById('gameAccount').value = '';
+                document.getElementById('playerAmount').value = '';
+                document.getElementById('validBet').value = '';
+                updatePreview();
+            } finally {
+                btn.disabled = false; btn.innerText = "記錄並同步";
+            }
         };
 
         function renderLedger() {
             const body = document.getElementById('ledgerBody');
-            if (ledgerData.length === 0) { 
-                document.getElementById('noData').classList.remove('hidden'); 
-                document.getElementById('noData').innerText = "尚無資料";
-                body.innerHTML = ''; return; 
-            }
-            document.getElementById('noData').classList.add('hidden');
+            const noData = document.getElementById('noData');
+            if (ledgerData.length === 0) { noData.classList.remove('hidden'); noData.innerText = "目前尚無紀錄"; body.innerHTML = ''; return; }
+            noData.classList.add('hidden');
             const sorted = [...ledgerData].sort((a,b) => b.id - a.id);
-
-            // 採用 innerHTML 一次渲染提升速度
             body.innerHTML = sorted.map(item => `
                 <tr class="active:bg-slate-100" onclick="openSplitModal('${item.id}')">
-                    <td class="p-3">
-                        <div class="font-black text-slate-800 tracking-tighter">${item.account}</div>
+                    <td class="p-3 text-left">
+                        <div class="font-black text-slate-800 text-xs">${item.account}</div>
                         <div class="text-[8px] text-slate-400 font-bold">${item.date}</div>
                     </td>
-                    <td class="p-3 text-right">
-                        <div class="font-bold text-slate-600">${fmt(item.PA)}</div>
-                        <div class="text-[9px] text-slate-400 font-medium">${fmt(item.VB)}</div>
-                    </td>
-                    <td class="p-3 text-right font-bold text-indigo-600 font-mono">${fmt(item.comm)}</td>
-                    <td class="p-3 text-right font-black text-blue-600 font-mono">${fmt(item.ref1)}</td>
+                    <td class="p-3 text-right font-bold text-indigo-600 font-mono text-[10px]">${fmt(item.comm)}</td>
+                    <td class="p-3 text-right font-black text-blue-600 font-mono text-sm">${fmt(item.ref1)}</td>
                     <td class="p-3 text-center" onclick="event.stopPropagation()">
                         <button onclick="requestDelete('${item.id}')" class="text-slate-300 p-2">✕</button>
                     </td>
@@ -333,27 +326,25 @@
             `).join('');
         }
 
-        window.requestDelete = (id) => {
-            pendingDeleteId = id;
-            document.getElementById('deleteConfirmModal').classList.remove('hidden');
-        };
-        window.closeDeleteModal = () => {
-            document.getElementById('deleteConfirmModal').classList.add('hidden');
-        };
+        window.requestDelete = (id) => { pendingDeleteId = id; document.getElementById('deleteConfirmModal').classList.remove('hidden'); };
+        window.closeDeleteModal = () => { document.getElementById('deleteConfirmModal').classList.add('hidden'); };
         document.getElementById('confirmDeleteAction').onclick = async () => {
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ledger', pendingDeleteId));
-            closeDeleteModal();
+            if (pendingDeleteId && auth.currentUser) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ledger', pendingDeleteId));
+                closeDeleteModal();
+            }
         };
 
         window.openSplitModal = (id) => {
             currentSplitId = id;
             const entry = ledgerData.find(i => i.id === id);
+            if (!entry) return;
             document.getElementById('modalAccountTitle').innerText = entry.account;
             document.getElementById('modalRefundSub').innerText = `月退 1: ${fmt(entry.ref1)}`;
             document.getElementById('modalStandRate').value = entry.standRate;
             const container = document.getElementById('splitRowsContainer');
             container.innerHTML = '';
-            if (entry.splits.length > 0) entry.splits.forEach(s => addSplitRow(s.name, s.percent, s.amount));
+            if (entry.splits && entry.splits.length > 0) entry.splits.forEach(s => addSplitRow(s.name, s.percent, s.amount));
             else addSplitRow();
             document.getElementById('splitModal').classList.remove('hidden');
             document.body.classList.add('modal-active');
@@ -365,15 +356,11 @@
         window.addSplitRow = (name = '', percent = '', amount = '') => {
             const container = document.getElementById('splitRowsContainer');
             const row = document.createElement('div');
-            row.className = "split-row flex gap-2 items-center";
+            row.className = "split-row flex gap-1 items-center";
             row.innerHTML = `
-                <input type="text" placeholder="股東" value="${name}" class="split-name flex-grow px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
-                <div class="w-16">
-                    <input type="number" step="any" placeholder="%" class="split-percent w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-right" value="${percent}" oninput="syncFromPercent(this)">
-                </div>
-                <div class="w-24">
-                    <input type="text" placeholder="金額" class="split-amount-input w-full px-2 py-2 bg-indigo-50 border border-indigo-100 rounded-xl text-xs font-bold text-right text-indigo-700" value="${amount ? fmt(amount) : ''}" oninput="syncFromAmount(this)" onfocus="unformatAndSelect(this)" onblur="formatInput(this)">
-                </div>
+                <input type="text" placeholder="股東" value="${name}" class="split-name flex-grow px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold">
+                <input type="number" step="any" placeholder="%" class="split-percent w-12 px-1 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-right" value="${percent}" oninput="syncFromPercent(this)">
+                <input type="text" placeholder="金額" class="split-amount-input w-20 px-1 py-2 bg-indigo-50 border border-indigo-100 rounded-lg text-xs font-bold text-right text-indigo-700" value="${amount ? fmt(amount) : ''}" oninput="syncFromAmount(this)" onfocus="unformatAndSelect(this)" onblur="formatInput(this)">
                 <button onclick="this.parentElement.remove(); updateSplitCalculations();" class="text-slate-300 p-1">✕</button>
             `;
             container.appendChild(row);
@@ -400,23 +387,22 @@
             document.getElementById('modalStandDisplay').innerText = `${fix(sr * 100)}%`;
             document.getElementById('modalAgentTotal').innerText = fmt(totalAgent);
             
-            let tp = 0, ta = 0;
+            let ta = 0;
             document.querySelectorAll('.split-row').forEach(row => {
-                tp += parseFloat(row.querySelector('.split-percent').value) || 0;
                 ta += parseFloat(row.querySelector('.split-amount-input').value.replace(/,/g, '')) || 0;
             });
-            document.getElementById('remainingPercent').innerText = `${fix(100 - tp)}%`;
             const own = totalAgent - ta;
-            document.getElementById('modalAgentOwn').innerText = fmt(own);
-            document.getElementById('modalAgentOwn').className = own < 0 ? "text-xl font-black text-red-600 font-mono" : "text-xl font-black text-emerald-700 font-mono";
+            const ownEl = document.getElementById('modalAgentOwn');
+            ownEl.innerText = fmt(own);
+            ownEl.className = own < 0 ? "text-xl font-black text-red-600 font-mono" : "text-xl font-black text-emerald-700 font-mono";
         };
 
         window.saveSplits = async () => {
+            if (!auth.currentUser || !currentSplitId) return;
             const entry = ledgerData.find(i => i.id === currentSplitId);
             const sr = parseFloat(document.getElementById('modalStandRate').value) || 0;
             const btn = document.getElementById('saveBtn');
-            btn.innerText = "同步中...";
-            btn.disabled = true;
+            btn.innerText = "..."; btn.disabled = true;
 
             const splits = [];
             let ta = 0;
@@ -427,16 +413,17 @@
                 if (n || p > 0 || a !== 0) { splits.push({ name: n, percent: p, amount: a }); ta += a; }
             });
             
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ledger', currentSplitId), { ...entry, standRate: sr, agentTotal: trunc(entry.ref1 * sr), agentOwn: trunc(entry.ref1 * sr) - ta, splits });
-            btn.innerText = "儲存設定";
-            btn.disabled = false;
-            closeSplitModal();
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ledger', currentSplitId), { ...entry, standRate: sr, agentTotal: trunc(entry.ref1 * sr), agentOwn: trunc(entry.ref1 * sr) - ta, splits });
+                closeSplitModal();
+            } finally {
+                btn.innerText = "儲存設定"; btn.disabled = false;
+            }
         };
 
         function updateStatus(text) {
             const s = document.getElementById('syncStatus');
-            s.innerText = text; s.classList.add('sync-active');
-            setTimeout(() => s.classList.remove('sync-active'), 2000);
+            s.style.opacity = '1'; setTimeout(() => s.style.opacity = '0', 1500);
         }
 
         init();
